@@ -1,0 +1,2 @@
+GET http://localhost:8080/orders/10001
+Authorization: Basic YnJpYW46cGFzc3dvcmQx

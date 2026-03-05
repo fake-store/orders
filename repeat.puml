@@ -1,0 +1,23 @@
+@startuml
+
+skinparam defaultFontName Arial
+left to right direction
+
+cloud "Backup" as backup
+usecase "Add new photos\nTag photos\nDeduplicate" as work
+
+
+folder "Primary Archive" as primaryArchive
+
+
+work -> primaryArchive
+
+primaryArchive --> backup
+
+backup --> work : "repeat"
+label "Repeat" as repeat
+}
+
+
+
+@enduml
