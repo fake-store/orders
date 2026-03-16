@@ -2,12 +2,15 @@ package xyz.fakestore.orders.order;
 
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import xyz.fakestore.orders.dto.OrderListItem;
 import xyz.fakestore.orders.dto.OrderRequest;
 import xyz.fakestore.orders.dto.OrderResponse;
-import xyz.fakestore.orders.dto.OrdersMeResponse;
+import xyz.fakestore.orders.dto.OrderStatusResponse;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -27,18 +30,57 @@ public class OrderController {
             @RequestHeader(value = "X-Trace-Id", required = false) String traceId) {
         if (traceId != null) MDC.put("traceId", traceId);
         try {
-            return orderService.requestPayment(request);
+            OrderResponse response = orderService.requestPayment(request);
+            MDC.put("orderId", response.getOrderId().toString());
+            return response;
         } finally {
+            MDC.remove("orderId");
+            if (traceId != null) MDC.remove("traceId");
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getOrder(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-Trace-Id", required = false) String traceId) {
+        if (traceId != null) MDC.put("traceId", traceId);
+        MDC.put("orderId", id.toString());
+        try {
+            UUID userId = UUID.fromString(
+                    (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+            return orderService.getOrder(id, userId)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } finally {
+            MDC.remove("orderId");
+            if (traceId != null) MDC.remove("traceId");
+        }
+    }
+
+    @GetMapping("/{id}/status")
+    public ResponseEntity<?> getStatus(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-Trace-Id", required = false) String traceId) {
+        if (traceId != null) MDC.put("traceId", traceId);
+        MDC.put("orderId", id.toString());
+        try {
+            return orderService.getOrderStatus(id)
+                    .map(status -> ResponseEntity.ok(new OrderStatusResponse(id, status)))
+                    .orElse(ResponseEntity.notFound().build());
+        } finally {
+            MDC.remove("orderId");
             if (traceId != null) MDC.remove("traceId");
         }
     }
 
     @GetMapping("/me")
-    public OrdersMeResponse me(@RequestHeader(value = "X-Trace-Id", required = false) String traceId) {
+    public List<OrderListItem> me(
+            @RequestHeader(value = "X-Trace-Id", required = false) String traceId) {
         if (traceId != null) MDC.put("traceId", traceId);
         try {
-            String userId = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            return new OrdersMeResponse("Hello from Orders Service!", UUID.fromString(userId));
+            UUID userId = UUID.fromString(
+                    (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+            return orderService.getOrdersByUserId(userId);
         } finally {
             if (traceId != null) MDC.remove("traceId");
         }
