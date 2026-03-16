@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import xyz.fakestore.orders.dto.OrderDetail;
 import xyz.fakestore.orders.dto.OrderListItem;
 import xyz.fakestore.orders.dto.OrderRequest;
 import xyz.fakestore.orders.dto.OrderResponse;
@@ -40,7 +41,7 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getOrder(
+    public ResponseEntity<OrderDetail> getOrder(
             @PathVariable UUID id,
             @RequestHeader(value = "X-Trace-Id", required = false) String traceId) {
         if (traceId != null) MDC.put("traceId", traceId);
@@ -48,7 +49,7 @@ public class OrderController {
         try {
             UUID userId = UUID.fromString(
                     (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal());
-            return orderService.getOrder(id, userId)
+            return orderService.getOrderDetail(id, userId)
                     .map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
         } finally {

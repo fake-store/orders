@@ -1,6 +1,7 @@
 package xyz.fakestore.orders.order;
 
 import org.springframework.stereotype.Service;
+import xyz.fakestore.orders.dto.OrderDetail;
 import xyz.fakestore.orders.dto.OrderItemRequest;
 import xyz.fakestore.orders.dto.OrderListItem;
 import xyz.fakestore.orders.dto.OrderRequest;
@@ -73,6 +74,10 @@ public class OrderService {
 
     public Optional<OrderListItem> getOrder(UUID orderId, UUID userId) {
         return orderRepository.findByIdForUser(orderId, userId);
+    }
+
+    public Optional<OrderDetail> getOrderDetail(UUID orderId, UUID userId) {
+        return orderRepository.findDetailByIdForUser(orderId, userId);
     }
 
     public Optional<String> getOrderStatus(UUID orderId) {

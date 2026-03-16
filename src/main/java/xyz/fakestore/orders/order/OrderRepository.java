@@ -5,6 +5,7 @@ import org.jooq.Field;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
+import xyz.fakestore.orders.dto.OrderDetail;
 import xyz.fakestore.orders.dto.OrderItemRequest;
 import xyz.fakestore.orders.dto.OrderListItem;
 
@@ -97,6 +98,25 @@ public class OrderRepository {
                 .fetchOptional(r -> new OrderListItem(
                         r.get(ID), r.get(STATUS), r.get(AMOUNT),
                         r.get(CURRENCY), r.get(CREATED_AT).toInstant()));
+    }
+
+    public Optional<OrderDetail> findDetailByIdForUser(UUID orderId, UUID userId) {
+        return dsl.select(ID, STATUS, AMOUNT, CURRENCY, CREATED_AT, PAYMENT_METHOD_ID, SHIPPING_ADDRESS_ID)
+                .from(ORDERS)
+                .where(ID.eq(orderId).and(USER_ID.eq(userId)))
+                .fetchOptional(r -> {
+                    List<OrderItemRecord> items = dsl
+                            .select(ITEM_PRODUCT_ID, ITEM_TITLE, ITEM_PRICE, ITEM_QUANTITY)
+                            .from(ORDER_ITEMS)
+                            .where(ITEM_ORDER_ID.eq(orderId))
+                            .fetch(ir -> new OrderItemRecord(
+                                    ir.get(ITEM_PRODUCT_ID), ir.get(ITEM_TITLE),
+                                    ir.get(ITEM_PRICE), ir.get(ITEM_QUANTITY)));
+                    return new OrderDetail(
+                            r.get(ID), r.get(STATUS), r.get(AMOUNT), r.get(CURRENCY),
+                            r.get(CREATED_AT).toInstant(), r.get(PAYMENT_METHOD_ID),
+                            r.get(SHIPPING_ADDRESS_ID), items);
+                });
     }
 
     public Optional<String> findStatusById(UUID orderId) {
